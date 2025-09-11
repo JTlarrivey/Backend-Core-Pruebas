@@ -1,0 +1,23 @@
+{
+  "name": "lightdata-user/backend-core-pruebas",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "vlucas/phpdotenv": "^5.5",
+    "lightdata-user/orquestador-liit": "*"   
+  },
+    "repositories": [
+    {
+      "type": "path",
+      "url": "C:/xampp/htdocs/orquestadorLiit",
+      "options": {
+        "symlink": true
+      }
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  }
+}
