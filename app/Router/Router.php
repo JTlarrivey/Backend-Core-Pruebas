@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Router;
 
-use App\Controller\AuthController;
-use App\Controller\UserController;
-use App\Controller\ApiController;
+use App\Controller\AuthController;       // ← OJO: singular, como tu AuthController
+use App\Controller\UserController;       // ← idem
+use App\Controller\ApiController;        // ← idem
 use App\Middleware\AuthenticationMiddleware;
 
 final class Router
@@ -15,11 +15,13 @@ final class Router
     {
         $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 
-        // Tomamos el path real que llegó (htaccess reescribe a index.php)
-        $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
-        $path = ltrim($path, '/'); // '' si es '/'
+        // Tomar el path real (htaccess reescribe todo a public/index.php)
+        $uri      = $_SERVER['REQUEST_URI'] ?? '/';
+        $pathPart = parse_url($uri, PHP_URL_PATH) ?? '/';
+        $rawPath  = trim($pathPart, '/');                  // p.ej. 'login' o '' si es raíz
+        $routeKey = $method . ' ' . ($rawPath === '' ? '/' : $rawPath);
 
-        // Preflight CORS opcional (si manejás CORS acá)
+        // Preflight CORS (si aplica)
         if ($method === 'OPTIONS') {
             http_response_code(204);
             return;
@@ -27,7 +29,10 @@ final class Router
 
         header('Content-Type: application/json; charset=utf-8');
 
-        $routeKey = "{$method} {$path}";
+        // Log en dev
+        if ((getenv('APP_ENV') ?: 'prod') !== 'prod') {
+            error_log('[core-router] ' . $routeKey);
+        }
 
         switch ($routeKey) {
             case 'POST login':
@@ -39,8 +44,6 @@ final class Router
                 (new AuthController())->logout();
                 return;
 
-
-            case 'GET ':
             case 'GET /':
                 echo json_encode(['ok' => true]);
                 return;
@@ -61,7 +64,7 @@ final class Router
 
             case 'POST user':
                 AuthenticationMiddleware::requireLogin();
-                (new UserController())->create($_POST ?? []);
+                (new UserController())->create($_POST ?? []); // si posteás JSON, cambialo como en login
                 return;
 
             case 'PUT user':
@@ -82,7 +85,7 @@ final class Router
 
             default:
                 http_response_code(404);
-                echo json_encode(['error' => 'Ruta no encontrada', 'path' => $path]);
+                echo json_encode(['error' => 'Ruta no encontrada', 'path' => ($rawPath === '' ? '/' : $rawPath)]);
                 return;
         }
     }
