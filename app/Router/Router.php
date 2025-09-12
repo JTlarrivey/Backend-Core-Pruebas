@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Router;
 
-use App\Controllers\AuthController;
-use App\Controllers\UserController;
-use App\Controllers\ApiController;
+use App\Controller\AuthController;
+use App\Controller\UserController;
+use App\Controller\ApiController;
 use App\Middleware\AuthenticationMiddleware;
 
 final class Router

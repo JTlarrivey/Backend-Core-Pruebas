@@ -1,13 +1,9 @@
-# front-controller a index.php
+DirectoryIndex index.php
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /
-
-  # si el archivo o carpeta existe, se sirve tal cual
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
-
-  # todo lo demás va a index.php
   RewriteRule ^ index.php [L]
 </IfModule>
+SetEnvIf X-Forwarded-Proto https HTTPS=on
