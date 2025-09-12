@@ -39,6 +39,12 @@ final class Router
                 (new AuthController())->logout();
                 return;
 
+
+            case 'GET ':
+            case 'GET /':
+                echo json_encode(['ok' => true]);
+                return;
+
             case 'GET verify_session':
                 (new AuthController())->verifySession();
                 return;
