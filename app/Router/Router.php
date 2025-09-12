@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Router;
 
-use App\Controller\AuthController;       // ← OJO: singular, como tu AuthController
-use App\Controller\UserController;       // ← idem
-use App\Controller\ApiController;        // ← idem
+use App\Controller\AuthController;
+use App\Controller\UserController;
+use App\Controller\ApiController;
 use App\Middleware\AuthenticationMiddleware;
 
 final class Router
@@ -14,14 +14,11 @@ final class Router
     public function dispatch(): void
     {
         $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
-
-        // Tomar el path real (htaccess reescribe todo a public/index.php)
         $uri      = $_SERVER['REQUEST_URI'] ?? '/';
         $pathPart = parse_url($uri, PHP_URL_PATH) ?? '/';
-        $rawPath  = trim($pathPart, '/');                  // p.ej. 'login' o '' si es raíz
+        $rawPath  = trim($pathPart, '/'); // '' si raíz
         $routeKey = $method . ' ' . ($rawPath === '' ? '/' : $rawPath);
 
-        // Preflight CORS (si aplica)
         if ($method === 'OPTIONS') {
             http_response_code(204);
             return;
@@ -29,7 +26,6 @@ final class Router
 
         header('Content-Type: application/json; charset=utf-8');
 
-        // Log en dev
         if ((getenv('APP_ENV') ?: 'prod') !== 'prod') {
             error_log('[core-router] ' . $routeKey);
         }
@@ -42,10 +38,6 @@ final class Router
 
             case 'POST logout':
                 (new AuthController())->logout();
-                return;
-
-            case 'GET /':
-                echo json_encode(['ok' => true]);
                 return;
 
             case 'GET verify_session':
@@ -64,19 +56,23 @@ final class Router
 
             case 'POST user':
                 AuthenticationMiddleware::requireLogin();
-                (new UserController())->create($_POST ?? []); // si posteás JSON, cambialo como en login
+                (new UserController())->create($_POST ?? []);
                 return;
 
             case 'PUT user':
                 AuthenticationMiddleware::requireLogin();
-                $data = json_decode(file_get_contents('php://input'), true) ?? [];
-                (new UserController())->update($data);
+                $d = json_decode(file_get_contents('php://input'), true) ?? [];
+                (new UserController())->update($d);
                 return;
 
             case 'DELETE user':
                 AuthenticationMiddleware::requireLogin();
-                $data = json_decode(file_get_contents('php://input'), true) ?? [];
-                (new UserController())->delete($data);
+                $d = json_decode(file_get_contents('php://input'), true) ?? [];
+                (new UserController())->delete($d);
+                return;
+
+            case 'GET /':
+                echo json_encode(['ok' => true]);
                 return;
 
             case 'GET metrics':
