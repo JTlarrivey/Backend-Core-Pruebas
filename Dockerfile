@@ -10,6 +10,11 @@ RUN sed -ri -e "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/sites-av
     > /etc/apache2/conf-available/override.conf \
  && a2enconf override
 
+ RUN apt-get update && apt-get install -y libzip-dev libicu-dev \
+    && docker-php-ext-install zip intl pdo pdo_mysql mysqli \
+    && a2enmod rewrite headers
+
+
 WORKDIR /var/www/html
 COPY . .
 
