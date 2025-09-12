@@ -33,13 +33,14 @@ class AuthController
 
         // 3) Devolver JSON con todo lo necesario para poblar la sesión
         echo json_encode([
-            'user_id'     => $user['id'],
-            'name'        => $user['name'],
-            'role'        => $user['role'],
-            'permissions' => $permissions,
-            'layout_pref' => $user['role'] === 'admin'
-                ? 'admin_dashboard'
-                : 'viewer_home',
+            'valid' => true,
+            'user'  => [
+                'user_id'     => $user['id'],
+                'name'        => $user['name'],
+                'role'        => $user['role'],
+                'permissions' => $permissions,
+                'layout_pref' => $user['role'] === 'admin' ? 'admin_dashboard' : 'viewer_home',
+            ],
         ]);
     }
 
