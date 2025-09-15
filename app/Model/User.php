@@ -2,58 +2,50 @@
 
 namespace App\Model;
 
-use App\Database\Connection;
 use PDO;
 
-class User
+final class User
 {
-    public static function findAll(): array
+    private static function pdo(): PDO
     {
-        $db = Connection::get();
-        return $db->query("SELECT id,name,email,role,created_at FROM users")->fetchAll(PDO::FETCH_ASSOC);
+        $host = getenv('DB_HOST') ?: 'localhost';
+        $port = (int)(getenv('DB_PORT') ?: 3306);
+        $db   = getenv('DB_NAME') ?: '';
+        $usr  = getenv('DB_USER') ?: '';
+        $pwd  = getenv('DB_PASS') ?: '';
+        $dsn  = "mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4";
+
+        $pdo = new PDO($dsn, $usr, $pwd, [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
+        return $pdo;
     }
 
-    public static function find(int $id): ?array
+    public static function checkCredentials(string $email, string $password): ?array
     {
-        $stmt = Connection::get()->prepare("SELECT id,name,email,role,created_at FROM users WHERE id=?");
-        $stmt->execute([$id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    }
+        try {
+            $pdo = self::pdo();
+            $st  = $pdo->prepare('SELECT id, name, email, password_hash, role FROM users WHERE email = ? LIMIT 1');
+            $st->execute([$email]);
+            $row = $st->fetch();
+            if (!$row) return null;
 
-    public static function create(string $name, string $email, string $passHash, string $role): int
-    {
-        $stmt = Connection::get()->prepare(
-            "INSERT INTO users (name,email,password_hash,role) VALUES (?,?,?,?)"
-        );
-        $stmt->execute([$name, $email, $passHash, $role]);
-        return (int) Connection::get()->lastInsertId();
-    }
+            // Si tus hashes son bcrypt de PHP:
+            if (!password_verify($password, $row['password_hash'])) {
+                return null;
+            }
 
-    public static function update(int $id, string $name, string $email, string $role): bool
-    {
-        $stmt = Connection::get()->prepare(
-            "UPDATE users SET name=?,email=?,role=? WHERE id=?"
-        );
-        return $stmt->execute([$name, $email, $role, $id]);
-    }
-
-    public static function delete(int $id): bool
-    {
-        $stmt = Connection::get()->prepare("DELETE FROM users WHERE id=?");
-        return $stmt->execute([$id]);
-    }
-
-    public static function checkCredentials(string $email, string $plain): ?array
-    {
-        $stmt = Connection::get()->prepare(
-            "SELECT id,name,email,password_hash,role FROM users WHERE email=?"
-        );
-        $stmt->execute([$email]);
-        $u = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$u || !password_verify($plain, $u['password_hash'])) {
-            return null;
+            return [
+                'id'   => (int)$row['id'],
+                'name' => $row['name'],
+                'role' => $row['role'] ?: 'viewer',
+            ];
+        } catch (\Throwable $e) {
+            if ((getenv('APP_ENV') ?: 'prod') !== 'prod') {
+                error_log('[core-db] ' . $e->getMessage());
+            }
+            throw $e; // lo captura AuthController y devuelve 500 JSON
         }
-        unset($u['password_hash']);
-        return $u;
     }
 }

@@ -30,7 +30,6 @@ final class Router
         }
 
         switch ($routeKey) {
-            // Auth
             case 'POST login':
                 $data = json_decode(file_get_contents('php://input'), true) ?? [];
                 (new AuthController())->login($data);
@@ -44,12 +43,10 @@ final class Router
                 (new AuthController())->verifySession();
                 return;
 
-                // API
             case 'GET metrics':
                 (new ApiController())->getRawMetrics();
                 return;
 
-                // Users (si los usás; sin middleware acá)
             case 'GET users':
                 (new UserController())->list();
                 return;
@@ -59,7 +56,7 @@ final class Router
                 return;
 
             case 'POST user':
-                (new UserController())->create($_POST ?? []); // si posteás JSON, adaptá como en login
+                (new UserController())->create($_POST ?? []);
                 return;
 
             case 'PUT user':
@@ -72,7 +69,6 @@ final class Router
                 (new UserController())->delete($d);
                 return;
 
-                // Health/root
             case 'GET /':
                 echo json_encode(['ok' => true]);
                 return;

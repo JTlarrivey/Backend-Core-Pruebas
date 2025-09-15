@@ -7,8 +7,12 @@ if (!defined('APP_ROOT')) {
 }
 require APP_ROOT . '/app/autoload.php';
 
-// En prod, no mostrar errores (así no rompe headers si algo falla)
-if ((getenv('APP_ENV') ?: 'prod') === 'prod') {
+// En DEV mostramos errores; en PROD los mandamos al log
+if ((getenv('APP_ENV') ?: 'prod') !== 'prod') {
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+    error_reporting(E_ALL);
+} else {
     ini_set('display_errors', '0');
     ini_set('log_errors', '1');
     error_reporting(E_ALL);

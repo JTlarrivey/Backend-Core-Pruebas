@@ -13,7 +13,6 @@ class AuthController
 
             $email    = $data['email']    ?? '';
             $password = $data['password'] ?? '';
-
             if ($email === '' || $password === '') {
                 http_response_code(400);
                 echo json_encode(['error' => 'missing_fields']);
@@ -28,13 +27,11 @@ class AuthController
                 return;
             }
 
-            $permissions = $this->loadPermissionsForRole($user['role'] ?? '');
-
             echo json_encode([
                 'user_id'     => $user['id'],
                 'name'        => $user['name'],
                 'role'        => $user['role'],
-                'permissions' => $permissions,
+                'permissions' => $this->loadPermissionsForRole($user['role'] ?? ''),
                 'layout_pref' => ($user['role'] ?? '') === 'admin' ? 'admin_dashboard' : 'viewer_home',
             ]);
             return;
@@ -48,66 +45,36 @@ class AuthController
         }
     }
 
-    /**
-     * Endpoint de logout: destruye la sesión.
-     *
-     * @return void
-     */
     public function logout(): void
     {
-        header('Content-Type: application/json');
-        if (session_status() !== PHP_SESSION_ACTIVE) {
+        header('Content-Type: application/json; charset=utf-8');
+        if (session_status() !== \PHP_SESSION_ACTIVE) {
             session_start();
         }
         session_unset();
         session_destroy();
-
-        echo json_encode([
-            'status'  => 'logged_out',
-            'message' => 'Sesión cerrada correctamente'
-        ]);
+        echo json_encode(['status' => 'logged_out']);
+        return;
     }
 
-    /**
-     * Endpoint de verificación de sesión: comprueba si hay usuario autenticado.
-     *
-     * @return void
-     */
     public function verifySession(): void
     {
-        header('Content-Type: application/json');
-        if (session_status() !== PHP_SESSION_ACTIVE) {
+        header('Content-Type: application/json; charset=utf-8');
+        if (session_status() !== \PHP_SESSION_ACTIVE) {
             session_start();
         }
-
         if (empty($_SESSION['user'])) {
             http_response_code(401);
-            echo json_encode([
-                'error'   => 'No autenticado',
-                'message' => 'La sesión no está activa o expiró.'
-            ]);
+            echo json_encode(['error' => 'No autenticado']);
             return;
         }
-
-        // Devolver contexto de usuario en sesión
         echo json_encode($_SESSION['user']);
+        return;
     }
 
-    /**
-     * Carga permisos asociados a un rol.
-     *
-     * @param string $role
-     * @return array
-     */
     private function loadPermissionsForRole(string $role): array
     {
-        switch ($role) {
-            case 'admin':
-                return ['view', 'edit', 'delete', 'manage_users'];
-            case 'viewer':
-                return ['view'];
-            default:
-                return [];
-        }
+        return $role === 'admin' ? ['view', 'edit', 'delete', 'manage_users']
+            : ($role === 'viewer' ? ['view'] : []);
     }
 }
