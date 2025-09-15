@@ -19,6 +19,12 @@ if ($path === '/health') {
     exit;
 }
 
+if ((getenv('APP_ENV') ?: 'prod') !== 'prod') {
+    ini_set('display_errors', '1');    // mostrar errores en dev
+    ini_set('display_startup_errors', '1');
+    error_reporting(E_ALL);
+}
+
 // --- Carga de variables ---
 // Recomendado: setear todo por variables de entorno en Render.
 // Fallback opcional a .env si no hay APP_ENV (útil en dev)

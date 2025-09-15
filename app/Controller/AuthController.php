@@ -6,42 +6,46 @@ use App\Model\User;
 
 class AuthController
 {
-    /**
-     * Endpoint de login: valida credenciales y devuelve contexto de usuario.
-     *
-     * @param array $data  Datos recibidos (POST): ['email', 'password']
-     * @return void
-     */
     public function login(array $data): void
     {
-        header('Content-Type: application/json');
+        try {
+            header('Content-Type: application/json; charset=utf-8');
 
-        $email    = $data['email']    ?? '';
-        $password = $data['password'] ?? '';
+            $email    = $data['email']    ?? '';
+            $password = $data['password'] ?? '';
 
-        // 1) Verificar credenciales en la tabla users
-        $user = User::checkCredentials($email, $password);
+            if ($email === '' || $password === '') {
+                http_response_code(400);
+                echo json_encode(['error' => 'missing_fields']);
+                return;
+            }
 
-        if (!$user) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Credenciales inválidas']);
-            return;
-        }
+            $user = User::checkCredentials($email, $password);
 
-        // 2) Construir contexto de usuario
-        $permissions = $this->loadPermissionsForRole($user['role']);
+            if (!$user) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Credenciales inválidas']);
+                return;
+            }
 
-        // 3) Devolver JSON con todo lo necesario para poblar la sesión
-        echo json_encode([
-            'valid' => true,
-            'user'  => [
+            $permissions = $this->loadPermissionsForRole($user['role'] ?? '');
+
+            echo json_encode([
                 'user_id'     => $user['id'],
                 'name'        => $user['name'],
                 'role'        => $user['role'],
                 'permissions' => $permissions,
-                'layout_pref' => $user['role'] === 'admin' ? 'admin_dashboard' : 'viewer_home',
-            ],
-        ]);
+                'layout_pref' => ($user['role'] ?? '') === 'admin' ? 'admin_dashboard' : 'viewer_home',
+            ]);
+            return;
+        } catch (\Throwable $e) {
+            if ((getenv('APP_ENV') ?: 'prod') !== 'prod') {
+                error_log('[core-login-ex] ' . $e->getMessage() . ' @' . $e->getFile() . ':' . $e->getLine());
+            }
+            http_response_code(500);
+            echo json_encode(['error' => 'internal_error', 'message' => 'Ups, algo salió mal']);
+            return;
+        }
     }
 
     /**

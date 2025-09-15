@@ -2,26 +2,16 @@
 
 declare(strict_types=1);
 
-/**
- * PSR-4 autoloader mínimo sin Composer.
- * Mapea namespaces a carpetas.
- */
+define('APP_ROOT', dirname(__DIR__));
+
 spl_autoload_register(function (string $class): void {
-    $prefixes = [
-        'App\\' => __DIR__ . '/',   // tus clases viven en app/
-        // Si tenés otro namespace/carpeta, agregalo acá:
-        // 'Core\\' => __DIR__ . '/../core/',
-    ];
+    $prefix  = 'App\\';
+    $baseDir = APP_ROOT . '/app/';
 
-    foreach ($prefixes as $prefix => $baseDir) {
-        $len = strlen($prefix);
-        if (strncmp($class, $prefix, $len) !== 0) continue;
+    if (strncmp($class, $prefix, strlen($prefix)) !== 0) return;
 
-        $relative = str_replace('\\', '/', substr($class, $len)) . '.php';
-        $file = $baseDir . $relative;
-        if (is_file($file)) {
-            require $file;
-            return;
-        }
-    }
+    $relative = substr($class, strlen($prefix));             // e.g. 'Controller\AuthController'
+    $file     = $baseDir . str_replace('\\', '/', $relative) . '.php';
+
+    if (is_file($file)) require $file;
 });
