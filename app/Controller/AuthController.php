@@ -8,40 +8,41 @@ class AuthController
 {
     public function login(array $data): void
     {
+        header('Content-Type: application/json; charset=utf-8');
         try {
-            header('Content-Type: application/json; charset=utf-8');
-
-            $email    = $data['email']    ?? '';
-            $password = $data['password'] ?? '';
+            $email    = trim($data['email'] ?? '');
+            $password = (string)($data['password'] ?? '');
             if ($email === '' || $password === '') {
                 http_response_code(400);
                 echo json_encode(['error' => 'missing_fields']);
                 return;
             }
 
-            $user = User::checkCredentials($email, $password);
-
+            $user = \App\Model\User::checkCredentials($email, $password);
             if (!$user) {
                 http_response_code(401);
                 echo json_encode(['error' => 'Credenciales inválidas']);
                 return;
             }
 
+            $permissions = $this->loadPermissionsForRole($user['role']);
+
             echo json_encode([
                 'user_id'     => $user['id'],
                 'name'        => $user['name'],
                 'role'        => $user['role'],
-                'permissions' => $this->loadPermissionsForRole($user['role'] ?? ''),
-                'layout_pref' => ($user['role'] ?? '') === 'admin' ? 'admin_dashboard' : 'viewer_home',
+                'permissions' => $permissions,
+                'layout_pref' => $user['role'] === 'admin' ? 'admin_dashboard' : 'viewer_home',
             ]);
-            return;
         } catch (\Throwable $e) {
-            if ((getenv('APP_ENV') ?: 'prod') !== 'prod') {
-                error_log('[core-login-ex] ' . $e->getMessage() . ' @' . $e->getFile() . ':' . $e->getLine());
-            }
+            $isProd = (getenv('APP_ENV') ?: 'prod') === 'prod';
+            error_log('[core-login] ' . $e->getMessage());
             http_response_code(500);
-            echo json_encode(['error' => 'internal_error', 'message' => 'Ups, algo salió mal']);
-            return;
+            echo json_encode(
+                $isProd
+                    ? ['error' => 'internal_error', 'message' => 'Ups, algo salió mal']
+                    : ['error' => 'internal_error', 'detail' => $e->getMessage()]
+            );
         }
     }
 
