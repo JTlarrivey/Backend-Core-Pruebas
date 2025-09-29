@@ -31,9 +31,13 @@ final class Router
 
         switch ($routeKey) {
             case 'POST login':
-                $data = json_decode(file_get_contents('php://input'), true) ?? [];
+                $raw = file_get_contents('php://input') ?: '';
+                $data = json_decode($raw, true);
+                if (!is_array($data) || !$data) {
+                    $data = $_POST ?? [];
+                }
                 (new AuthController())->login($data);
-                return;
+                return;;
 
             case 'POST logout':
                 (new AuthController())->logout();
