@@ -1,14 +1,8 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
-
-  # Servir archivos/carpetas reales (por si tenés /public/health.php, etc.)
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
-
-  # Evitar loop con index.php
   RewriteRule ^index\.php$ - [L]
-
-  # Fallback: todas las rutas → index.php (front controller)
   RewriteRule . index.php [QSA,L]
 </IfModule>
