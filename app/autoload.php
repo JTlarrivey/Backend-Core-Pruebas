@@ -70,15 +70,29 @@ load_dotenv(APP_ROOT . '/.env', false);
 
 // ---------------------------------------------------------
 // Autoload de clases PSR-4 para el namespace App\...
+// Ahora soporta tanto /app como /src
 // ---------------------------------------------------------
 spl_autoload_register(function (string $class): void {
-    $prefix  = 'App\\';
-    $baseDir = APP_ROOT . '/app/';
-    if (strncmp($class, $prefix, strlen($prefix)) !== 0) return;
+    $prefix = 'App\\';
+    $baseDirs = [
+        APP_ROOT . '/app/',
+        APP_ROOT . '/src/',
+    ];
+
+    if (strncmp($class, $prefix, strlen($prefix)) !== 0) {
+        return;
+    }
 
     $relative = substr($class, strlen($prefix));
-    $file     = $baseDir . str_replace('\\', '/', $relative) . '.php';
-    if (is_file($file)) require $file;
+    $path = str_replace('\\', '/', $relative) . '.php';
+
+    foreach ($baseDirs as $baseDir) {
+        $file = $baseDir . $path;
+        if (is_file($file)) {
+            require $file;
+            return;
+        }
+    }
 });
 
 // ---------------------------------------------------------
